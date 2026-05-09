@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="今天">
+<title>今天</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23fdf6f0'/><circle cx='90' cy='90' r='30' fill='%23e8a4ba'/><circle cx='90' cy='90' r='10' fill='%23f0c860'/></svg>">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    overflow-x: hidden;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    background: #fdf6f0;
+    color: #3a3530;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+  }
+  textarea, input { user-select: text; -webkit-user-select: text; }
+
+  /* —— 通用 —— */
+  .screen {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    position: relative;
+  }
+  .screen.active { display: flex; }
+  .fade-in { animation: fadeIn 1s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* —— 首页（看花）—— */
+  #home {
+    justify-content: space-between;
+    padding: 30px 20px 40px;
+  }
+  .top-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 28px;
+  }
+  .date-text {
+    font-size: 13px;
+    color: #a89888;
+    letter-spacing: 0.1em;
+  }
+  .icon-btn {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: #b8a898;
+    font-size: 18px;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+
+  .center-stage {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  #phase-text {
+    font-size: 14px;
+    color: #b8a898;
+    letter-spacing: 0.15em;
+    min-height: 20px;
+    transition: opacity 0.6s ease;
+  }
+  #flower-stage {
+    width: 280px;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  #flower-stage:active { transform: scale(0.98); }
+  #greeting {
+    font-size: 18px;
+    color: #6b5d50;
+    letter-spacing: 0.05em;
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+  #flower-name {
+    font-size: 12px;
+    color: #c4b5a5;
+    letter-spacing: 0.2em;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+
+  .write-prompt {
+    margin-top: 16px;
+    background: none;
+    border: none;
+    color: #b8a090;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    padding: 12px 24px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 1.2s ease, color 0.3s ease;
+    font-family: inherit;
+  }
+  .write-prompt:active { color: #8a7060; }
+  .write-prompt.show { opacity: 1; }
+
+  /* —— 女儿回信徽章 —— */
+  .reply-badge {
+    margin-top: 12px;
+    background: linear-gradient(135deg, #fde4e8 0%, #fce8ee 100%);
+    border: 0.5px solid #e8a4ba;
+    border-radius: 22px;
+    padding: 10px 20px;
+    color: #a55a6e;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    font-family: inherit;
+    animation: gentleBob 2.4s ease-in-out infinite;
+    transition: transform 0.2s ease;
+  }
+  .reply-badge:active { transform: scale(0.97); }
+  @keyframes gentleBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-3px); }
+  }
+
+  /* —— 写「今天」页 —— */
+  #write {
+    padding: 20px 24px 24px;
+    background: #fdf9f4;
+  }
+  .write-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .back-btn {
+    background: none;
+    border: none;
+    color: #a89888;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 0;
+    font-family: inherit;
+  }
+  .write-date {
+    font-size: 12px;
+    color: #c4b5a5;
+    letter-spacing: 0.1em;
+  }
+  #write-textarea {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 17px;
+    line-height: 1.9;
+    color: #3a3530;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    padding: 8px 0;
+    letter-spacing: 0.02em;
+  }
+  #write-textarea::placeholder {
+    color: #d4c4b4;
+    font-style: italic;
+  }
+  .write-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 0.5px solid #ead8c8;
+  }
+  .btn {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: #d4a59a;
+    color: #fff;
+  }
+  .btn-primary:active { background: #c89588; }
+  .btn-ghost {
+    background: transparent;
+    color: #b88a78;
+    border: 0.5px solid #e0c8b8;
+  }
+  .btn-ghost:active { background: #f8ede4; }
+
+  /* —— 列表页 —— */
+  #list {
+    background: #fdf9f4;
+    padding: 20px 20px 40px;
+  }
+  .list-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .list-title {
+    font-size: 18px;
+    color: #6b5d50;
+    letter-spacing: 0.1em;
+    margin: 0;
+    font-weight: 500;
+  }
+  .list-empty {
+    text-align: center;
+    color: #c4b5a5;
+    font-size: 14px;
+    margin-top: 80px;
+    line-height: 1.8;
+  }
+  #list-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .entry {
+    background: #fff;
+    border: 0.5px solid #ead8c8;
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+  }
+  .entry-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: #b8a898;
+    letter-spacing: 0.05em;
+  }
+  .entry-shared {
+    color: #c89588;
+    font-size: 11px;
+  }
+  .entry-text {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #4a4035;
+    white-space: pre-wrap;
+    word-break: break-word;
+    user-select: text;
+  }
+  .entry-quote {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 0.5px dashed #ead8c8;
+    font-size: 13px;
+    color: #a08878;
+    line-height: 1.7;
+    font-style: normal;
+    letter-spacing: 0.03em;
+  }
+  .entry-quote-from {
+    display: block;
+    font-size: 11px;
+    color: #c4b5a5;
+    margin-top: 4px;
+    text-align: right;
+  }
+  .entry-reply {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: #fdf2ee;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #6b5d50;
+    line-height: 1.7;
+    user-select: text;
+  }
+  .entry-reply-label {
+    font-size: 11px;
+    color: #c89588;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+
+  /* —— 第一次说明弹窗 —— */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(60, 50, 40, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: #fdf9f4;
+    border-radius: 18px;
+    padding: 28px 24px 20px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+  .modal h2 {
+    font-size: 17px;
+    margin: 0 0 16px;
+    color: #6b5d50;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  .modal p {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #6b5d50;
+    margin: 0 0 12px;
+    letter-spacing: 0.02em;
+  }
+  .modal-btn {
+    margin-top: 16px;
+    background: #d4a59a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 36px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.1em;
+  }
+
+  /* —— 寄出后小提示 —— */
+  .toast {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(60, 50, 40, 0.85);
+    color: #fdf6f0;
+    padding: 12px 22px;
+    border-radius: 24px;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s ease;
+    z-index: 200;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 屏幕 1：首页（看花）═══════════ -->
+<div id="home" class="screen active">
+  <div class="top-bar">
+    <span class="date-text" id="date-text"></span>
+    <button class="icon-btn" id="list-btn" aria-label="过往的今天">📖</button>
+  </div>
+
+  <div class="center-stage">
+    <p id="phase-text">轻轻吸气</p>
+    <div id="flower-stage">
+      <svg id="flower-svg" width="280" height="280" viewBox="0 0 280 280" style="overflow: visible;">
+        <defs>
+          <radialGradient id="centerGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#f4d97a"/>
+            <stop offset="100%" stop-color="#c89a3a"/>
+          </radialGradient>
+        </defs>
+        <g id="petals" transform="translate(140 140)"></g>
+        <circle id="center" cx="140" cy="140" r="6" fill="url(#centerGrad)" opacity="0.9"/>
+      </svg>
+    </div>
+    <p id="greeting">今天怎么样？看看花吧。</p>
+    <p id="flower-name"></p>
+    <button id="reply-badge" class="reply-badge" style="display:none;">
+      <span id="reply-badge-text">女儿回信了</span>
+      <span style="margin-left:6px;">→</span>
+    </button>
+  </div>
+
+  <button class="write-prompt" id="write-prompt">想说点什么吗</button>
+</div>
+
+<!-- ═══════════ 屏幕 4：看回信 ═══════════ -->
+<div id="replies" class="screen">
+  <div class="list-header">
+    <button class="back-btn" id="replies-back">← 返回</button>
+    <h2 class="list-title">女儿的回信</h2>
+    <span style="width: 40px;"></span>
+  </div>
+  <div id="replies-content"></div>
+</div>
+
+<!-- ═══════════ 屏幕 2：写「今天」═══════════ -->
+<div id="write" class="screen">
+  <div class="write-header">
+    <button class="back-btn" id="write-back">← 返回</button>
+    <span class="write-date" id="write-date"></span>
+  </div>
+  <textarea id="write-textarea" placeholder="今天……" autofocus></textarea>
+  <div class="write-actions">
+    <button class="btn btn-primary" id="save-self">收起来</button>
+    <button class="btn btn-ghost" id="save-share">寄给女儿</button>
+  </div>
+</div>
+
+<!-- ═══════════ 屏幕 3：列表 ═══════════ -->
+<div id="list" class="screen">
+  <div class="list-header">
+    <button class="back-btn" id="list-back">← 返回</button>
+    <h2 class="list-title">过往的今天</h2>
+    <span style="width: 40px;"></span>
+  </div>
+  <div id="list-content"></div>
+  <div class="list-empty" id="list-empty" style="display:none;">
+    这里还空着——<br>
+    您写的「今天」会留在这里。
+  </div>
+</div>
+
+<!-- ═══════════ 弹窗：第一次使用 ═══════════ -->
+<div class="modal-overlay" id="welcome-modal">
+  <div class="modal">
+    <h2>妈妈，欢迎你来到「今天」</h2>
+    <p>这里是您一个人的小园子。</p>
+    <p>您写在这里的话，默认只有您能看到。</p>
+    <p>如果也想分享给我、或有什么话想对我说，请按"寄给女儿"，我会回信！</p>
+    <button class="modal-btn" id="welcome-ok">好的</button>
+  </div>
+</div>
+
+<!-- ═══════════ 寄出提示 ═══════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════ EmailJS SDK ═══════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//   配置区——部署前你要改的地方都在这里
+// ═══════════════════════════════════════════════════════════════════
+const CONFIG = {
+  // EmailJS 配置（部署文档里会教你拿这三个值）
+  emailjs: {
+    publicKey: 'tPzVkrdBXv2Rlarzs',      // ← 替换
+    serviceId: 'service_nh8htgd',      // ← 替换
+    templateId: 'template_4rezib9',    // ← 替换
+  },
+  // Cloudflare Workers URL（用来存信和拉回信）
+  workerUrl: 'https://today-mama.kellywu0523.workers.dev',        // ← 替换，类似 https://today-mama.your-account.workers.dev
+  // 回信页面的完整 URL（你点邮件链接打开的那个）
+  replyPageUrl: 'https://siyi415.github.io/today/reply.html', // ← 替换，类似 https://koko.github.io/today/reply.html
+  // 你的称呼，会出现在邮件主题里（默认"妈妈"）
+  motherName: '妈妈',
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//   花的数据：10 种花，按日期循环
+// ═══════════════════════════════════════════════════════════════════
+const FLOWERS = [
+  { name: '牡丹',   petalOuter: '#e8a4ba', petalInner: '#fce8ee', centerOuter: '#b8862a', centerInner: '#f4d97a', petals: 12, shape: 'round' },
+  { name: '芍药',   petalOuter: '#dba0b4', petalInner: '#fdeef0', centerOuter: '#a8732a', centerInner: '#f0c860', petals: 14, shape: 'round' },
+  { name: '玉兰',   petalOuter: '#e8dcc4', petalInner: '#fdfcf6', centerOuter: '#9a7820', centerInner: '#d4b860', petals: 9,  shape: 'long' },
+  { name: '蝴蝶兰', petalOuter: '#d896ad', petalInner: '#fef0f5', centerOuter: '#a87830', centerInner: '#e8b870', petals: 5,  shape: 'wide' },
+  { name: '茉莉',   petalOuter: '#ece4d4', petalInner: '#ffffff', centerOuter: '#a07820', centerInner: '#e8c860', petals: 8,  shape: 'round' },
+  { name: '山茶',   petalOuter: '#c87880', petalInner: '#ffe8eb', centerOuter: '#985820', centerInner: '#f4cc60', petals: 10, shape: 'round' },
+  { name: '海棠',   petalOuter: '#d490a0', petalInner: '#fde4e8', centerOuter: '#a06820', centerInner: '#f0c060', petals: 6,  shape: 'round' },
+  { name: '木槿',   petalOuter: '#b884a8', petalInner: '#f8e8f0', centerOuter: '#883820', centerInner: '#e89060', petals: 5,  shape: 'wide' },
+  { name: '桔梗',   petalOuter: '#9888c0', petalInner: '#ece8f8', centerOuter: '#806020', centerInner: '#f0d870', petals: 5,  shape: 'pointed' },
+  { name: '栀子',   petalOuter: '#e4dcc0', petalInner: '#fefefa', centerOuter: '#a07820', centerInner: '#f4d860', petals: 6,  shape: 'round' },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//   50 句明亮花签
+// ═══════════════════════════════════════════════════════════════════
+const HUA_QIAN = [
+  { text: "云破月来花弄影。", from: "张先《天仙子》" },
+  { text: "红杏枝头春意闹。", from: "宋祁《玉楼春》" },
+  { text: "沾衣欲湿杏花雨，吹面不寒杨柳风。", from: "志南《绝句》" },
+  { text: "等闲识得东风面，万紫千红总是春。", from: "朱熹《春日》" },
+  { text: "桃之夭夭，灼灼其华。", from: "《诗经·桃夭》" },
+  { text: "竹外桃花三两枝，春江水暖鸭先知。", from: "苏轼《惠崇春江晚景》" },
+  { text: "桃花一簇开无主，可爱深红爱浅红。", from: "杜甫《江畔独步寻花》" },
+  { text: "迟日江山丽，春风花草香。", from: "杜甫《绝句》" },
+  { text: "好雨知时节，当春乃发生。", from: "杜甫《春夜喜雨》" },
+  { text: "草树知春不久归，百般红紫斗芳菲。", from: "韩愈《晚春》" },
+  { text: "接天莲叶无穷碧，映日荷花别样红。", from: "杨万里《晓出净慈寺》" },
+  { text: "荷叶罗裙一色裁，芙蓉向脸两边开。", from: "王昌龄《采莲曲》" },
+  { text: "水面清圆，一一风荷举。", from: "周邦彦《苏幕遮》" },
+  { text: "毕竟西湖六月中，风光不与四时同。", from: "杨万里《晓出净慈寺》" },
+  { text: "小荷才露尖尖角，早有蜻蜓立上头。", from: "杨万里《小池》" },
+  { text: "梅子留酸软齿牙，芭蕉分绿与窗纱。", from: "杨万里《闲居初夏》" },
+  { text: "绿树阴浓夏日长，楼台倒影入池塘。", from: "高骈《山亭夏日》" },
+  { text: "桂子月中落，天香云外飘。", from: "宋之问《灵隐寺》" },
+  { text: "采菊东篱下，悠然见南山。", from: "陶渊明《饮酒》" },
+  { text: "宁可枝头抱香死，何曾吹落北风中。", from: "郑思肖《寒菊》" },
+  { text: "暗暗淡淡紫，融融冶冶黄。", from: "李商隐《菊花》" },
+  { text: "湖光秋月两相和，潭面无风镜未磨。", from: "刘禹锡《望洞庭》" },
+  { text: "墙角数枝梅，凌寒独自开。", from: "王安石《梅花》" },
+  { text: "疏影横斜水清浅，暗香浮动月黄昏。", from: "林逋《山园小梅》" },
+  { text: "遥知不是雪，为有暗香来。", from: "王安石《梅花》" },
+  { text: "已是悬崖百丈冰，犹有花枝俏。", from: "毛泽东《卜算子·咏梅》" },
+  { text: "俏也不争春，只把春来报。", from: "毛泽东《卜算子·咏梅》" },
+  { text: "晓看红湿处，花重锦官城。", from: "杜甫《春夜喜雨》" },
+  { text: "深林人不知，明月来相照。", from: "王维《竹里馆》" },
+  { text: "明月松间照，清泉石上流。", from: "王维《山居秋暝》" },
+  { text: "月出惊山鸟，时鸣春涧中。", from: "王维《鸟鸣涧》" },
+  { text: "绿肥红瘦。", from: "李清照《如梦令》" },
+  { text: "知否，知否，应是绿肥红瘦。", from: "李清照《如梦令》" },
+  { text: "满架蔷薇一院香。", from: "高骈《山亭夏日》" },
+  { text: "梨花院落溶溶月，柳絮池塘淡淡风。", from: "晏殊《寓意》" },
+  { text: "山光悦鸟性，潭影空人心。", from: "常建《题破山寺后禅院》" },
+  { text: "行到水穷处，坐看云起时。", from: "王维《终南别业》" },
+  { text: "空山新雨后，天气晚来秋。", from: "王维《山居秋暝》" },
+  { text: "长恨春归无觅处，不知转入此中来。", from: "白居易《大林寺桃花》" },
+  { text: "返景入深林，复照青苔上。", from: "王维《鹿柴》" },
+  { text: "偷得浮生半日闲。", from: "李涉《题鹤林寺壁》" },
+  { text: "陌上花开，可缓缓归矣。", from: "钱镠致夫人书" },
+  { text: "人闲桂花落，夜静春山空。", from: "王维《鸟鸣涧》" },
+  { text: "晚来天欲雪，能饮一杯无？", from: "白居易《问刘十九》" },
+  { text: "山中无历日，寒尽不知年。", from: "太上隐者《答人》" },
+  { text: "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。", from: "苏轼《定风波》" },
+  { text: "人面不知何处去，桃花依旧笑春风。", from: "崔护《题都城南庄》" },
+  { text: "落红不是无情物，化作春泥更护花。", from: "龚自珍《己亥杂诗》" },
+  { text: "花落家童未扫，鸟啼山客犹眠。", from: "王维《田园乐》" },
+  { text: "曲径通幽处，禅房花木深。", from: "常建《题破山寺后禅院》" },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//   工具函数
+// ═══════════════════════════════════════════════════════════════════
+function getTodayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function getDayOfYear() {
+  const d = new Date();
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = d - start;
+  return Math.floor(diff / (1000*60*60*24));
+}
+function getTodayFlower() {
+  return FLOWERS[getDayOfYear() % FLOWERS.length];
+}
+function pickHuaQian(seed) {
+  // 用记录的时间戳作为种子，保证每条记录的诗签固定
+  const idx = Math.abs(seed) % HUA_QIAN.length;
+  return HUA_QIAN[idx];
+}
+function fmtDate(ts) {
+  const d = new Date(ts);
+  const m = d.getMonth()+1, day = d.getDate();
+  const h = d.getHours(), min = String(d.getMinutes()).padStart(2,'0');
+  const period = h < 6 ? '凌晨' : h < 12 ? '上午' : h < 14 ? '中午' : h < 18 ? '下午' : h < 22 ? '晚上' : '深夜';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${m}月${day}日 ${period} ${h12}:${min}`;
+}
+function fmtDateShort(ts) {
+  const d = new Date(ts);
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
+function fmtTodayHeader() {
+  const d = new Date();
+  const weekdays = ['日','一','二','三','四','五','六'];
+  return `${d.getMonth()+1}月${d.getDate()}日 · 周${weekdays[d.getDay()]}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   localStorage 数据层
+// ═══════════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'today_entries_v1';
+const META_KEY = 'today_meta_v1';
+
+function loadEntries() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function saveEntry(entry) {
+  const entries = loadEntries();
+  entries.push(entry);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch (e) {
+    console.error('保存失败', e);
+  }
+}
+function loadMeta() {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function saveMeta(meta) {
+  try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   花的渲染
+// ═══════════════════════════════════════════════════════════════════
+const petalsGroup = document.getElementById('petals');
+const centerCircle = document.getElementById('center');
+const centerGrad = document.getElementById('centerGrad');
+const flowerNameEl = document.getElementById('flower-name');
+
+let currentFlower = null;
+
+function buildFlower(flower) {
+  currentFlower = flower;
+  petalsGroup.innerHTML = '';
+  const n = flower.petals;
+  const shape = flower.shape;
+
+  for (let layer = 0; layer < 2; layer++) {
+    const layerN = layer === 0 ? n : Math.max(5, n - 3);
+    const layerOffset = layer === 0 ? 0 : Math.PI / layerN;
+    const layerScale = layer === 0 ? 1 : 0.65;
+    const layerOpacity = layer === 0 ? 0.85 : 1;
+
+    for (let i = 0; i < layerN; i++) {
+      const angle = (i / layerN) * Math.PI * 2 + layerOffset;
+      const petal = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+      let rx, ry;
+      if (shape === 'long') { rx = 18; ry = 55; }
+      else if (shape === 'wide') { rx = 38; ry = 42; }
+      else if (shape === 'pointed') { rx = 16; ry = 50; }
+      else { rx = 28; ry = 38; }
+      rx *= layerScale; ry *= layerScale;
+
+      petal.setAttribute('cx', '0');
+      petal.setAttribute('cy', '-' + (ry * 0.7));
+      petal.setAttribute('rx', rx);
+      petal.setAttribute('ry', ry);
+      petal.setAttribute('fill', layer === 0 ? flower.petalOuter : flower.petalInner);
+      petal.setAttribute('opacity', layerOpacity);
+      petal.setAttribute('transform', 'rotate(' + (angle * 180 / Math.PI) + ') scale(0.05)');
+      petal.style.transformOrigin = '0 0';
+      petal.style.transition = 'transform 5.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 1s ease';
+      petal.dataset.angle = (angle * 180 / Math.PI).toString();
+      petal.dataset.layer = layer.toString();
+      petalsGroup.appendChild(petal);
+    }
+  }
+
+  // center color
+  centerGrad.children[0].setAttribute('stop-color', flower.centerInner);
+  centerGrad.children[1].setAttribute('stop-color', flower.centerOuter);
+  centerCircle.setAttribute('r', '6');
+  centerCircle.style.transition = 'r 5.5s ease';
+}
+
+function setPetalsScale(scale) {
+  const petals = petalsGroup.querySelectorAll('ellipse');
+  petals.forEach(p => {
+    const angle = p.dataset.angle;
+    const layerScale = p.dataset.layer === '1' ? 0.85 : 1;
+    p.setAttribute('transform', 'rotate(' + angle + ') scale(' + (scale * layerScale) + ')');
+  });
+}
+
+function instantBloom() {
+  // 直接显示完整开放的花，不做呼吸
+  const petals = petalsGroup.querySelectorAll('ellipse');
+  petals.forEach(p => {
+    p.style.transition = 'none';
+    const angle = p.dataset.angle;
+    const layerScale = p.dataset.layer === '1' ? 0.85 : 1;
+    p.setAttribute('transform', 'rotate(' + angle + ') scale(' + (1 * layerScale) + ')');
+  });
+  centerCircle.style.transition = 'none';
+  centerCircle.setAttribute('r', '14');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   呼吸循环 + 开花
+// ═══════════════════════════════════════════════════════════════════
+const phaseText = document.getElementById('phase-text');
+const greetingEl = document.getElementById('greeting');
+const writePromptEl = document.getElementById('write-prompt');
+
+const BREATHING = [
+  { text: '轻轻吸气', duration: 5000, scale: 0.55, centerR: 8 },
+  { text: '停一下',   duration: 2000, scale: 0.55, centerR: 8 },
+  { text: '慢慢呼气', duration: 7000, scale: 0.30, centerR: 7 },
+];
+const TOTAL_CYCLES = 3;
+
+let breathingState = { running: false };
+
+function runBreathing(onComplete) {
+  if (breathingState.running) return;
+  breathingState.running = true;
+
+  let cycleCount = 0;
+  let phaseIdx = 0;
+
+  // reset petals to closed state
+  setPetalsScale(0.05);
+  centerCircle.setAttribute('r', '6');
+
+  function nextPhase() {
+    if (cycleCount >= TOTAL_CYCLES) {
+      bloom();
+      return;
+    }
+    const phase = BREATHING[phaseIdx];
+    phaseText.style.opacity = '0';
+    setTimeout(() => {
+      phaseText.textContent = phase.text;
+      phaseText.style.opacity = '1';
+      setPetalsScale(phase.scale);
+      centerCircle.setAttribute('r', phase.centerR);
+    }, 300);
+
+    setTimeout(() => {
+      phaseIdx++;
+      if (phaseIdx >= BREATHING.length) {
+        phaseIdx = 0;
+        cycleCount++;
+      }
+      nextPhase();
+    }, phase.duration);
+  }
+
+  function bloom() {
+    phaseText.style.opacity = '0';
+    setTimeout(() => {
+      phaseText.textContent = '花开了';
+      phaseText.style.opacity = '1';
+    }, 400);
+
+    const petals = petalsGroup.querySelectorAll('ellipse');
+    petals.forEach(p => {
+      p.style.transition = 'transform 3.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      const angle = p.dataset.angle;
+      const layerScale = p.dataset.layer === '1' ? 0.85 : 1;
+      p.setAttribute('transform', 'rotate(' + angle + ') scale(' + (1 * layerScale) + ')');
+    });
+    centerCircle.style.transition = 'r 3.5s ease';
+    centerCircle.setAttribute('r', '14');
+
+    setTimeout(() => {
+      breathingState.running = false;
+      // 显示问候和花名
+      greetingEl.style.opacity = '1';
+      flowerNameEl.textContent = '— ' + currentFlower.name + ' —';
+      flowerNameEl.style.opacity = '1';
+      writePromptEl.classList.add('show');
+      if (onComplete) onComplete();
+    }, 4000);
+  }
+
+  setTimeout(nextPhase, 800);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   场景切换
+// ═══════════════════════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   首页初始化
+// ═══════════════════════════════════════════════════════════════════
+function initHome() {
+  document.getElementById('date-text').textContent = fmtTodayHeader();
+  const flower = getTodayFlower();
+  buildFlower(flower);
+
+  const meta = loadMeta();
+  const todayKey = getTodayKey();
+  const isFirstToday = meta.lastBreathDate !== todayKey;
+
+  if (isFirstToday) {
+    // 第一次打开——完整呼吸
+    phaseText.textContent = '';
+    phaseText.style.opacity = '0';
+    setPetalsScale(0.05);
+    setTimeout(() => runBreathing(), 600);
+    meta.lastBreathDate = todayKey;
+    saveMeta(meta);
+  } else {
+    // 同天再开——花已开
+    phaseText.textContent = '';
+    instantBloom();
+    greetingEl.style.opacity = '1';
+    flowerNameEl.textContent = '— ' + currentFlower.name + ' —';
+    flowerNameEl.style.opacity = '1';
+    writePromptEl.classList.add('show');
+  }
+
+  // 后台拉取回信，不阻塞 UI
+  fetchReplies();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   拉取回信 + 显示徽章
+// ═══════════════════════════════════════════════════════════════════
+async function fetchReplies() {
+  if (!CONFIG.workerUrl || CONFIG.workerUrl === 'YOUR_WORKER_URL') return;
+  try {
+    const meta = loadMeta();
+    const since = meta.lastReplyCheck || 0;
+    const res = await fetch(CONFIG.workerUrl + '/replies?since=' + since);
+    if (!res.ok) return;
+    const data = await res.json();
+    const replies = data.replies || [];
+    if (replies.length === 0) return;
+
+    // 把回信存到对应记录里
+    const entries = loadEntries();
+    let unreadCount = 0;
+    let updatedAny = false;
+    replies.forEach(reply => {
+      const entry = entries.find(e => e.letterId === reply.letterId);
+      if (entry) {
+        // 只在新内容时标为未读
+        if (!entry.reply || entry.reply !== reply.text) {
+          entry.reply = reply.text;
+          entry.replyTs = reply.createdAt;
+          entry.replyRead = false;
+          updatedAny = true;
+        }
+      }
+    });
+    if (updatedAny) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch (e) {}
+    }
+
+    // 数未读
+    unreadCount = entries.filter(e => e.reply && !e.replyRead).length;
+
+    // 显示徽章
+    if (unreadCount > 0) {
+      const badge = document.getElementById('reply-badge');
+      const txt = document.getElementById('reply-badge-text');
+      txt.textContent = unreadCount === 1 ? '女儿回信了' : `女儿回信了 (${unreadCount})`;
+      badge.style.display = 'inline-block';
+    }
+
+    // 记录这次拉取的时间
+    meta.lastReplyCheck = Date.now();
+    saveMeta(meta);
+  } catch (e) {
+    console.warn('拉取回信失败', e);
+  }
+}
+
+// 点徽章 → 进入回信查看
+document.getElementById('reply-badge').addEventListener('click', () => {
+  renderReplies();
+  showScreen('replies');
+});
+
+document.getElementById('replies-back').addEventListener('click', () => {
+  document.getElementById('reply-badge').style.display = 'none';
+  showScreen('home');
+});
+
+function renderReplies() {
+  const entries = loadEntries().filter(e => e.reply).reverse();
+  const container = document.getElementById('replies-content');
+  container.innerHTML = '';
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="list-empty" style="display:block;">还没有回信。</div>';
+    return;
+  }
+  entries.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'entry';
+    const isUnread = !e.replyRead;
+    div.innerHTML = `
+      <div class="entry-meta">
+        <span>${fmtDate(e.ts)} · ${e.flower || ''}</span>
+        ${isUnread ? '<span class="entry-shared">✿ 新</span>' : ''}
+      </div>
+      <div style="font-size:13px;color:#a89888;margin-bottom:8px;">您当时写的：</div>
+      <div class="entry-text" style="font-size:14px;color:#7a6a5a;"></div>
+      <div class="entry-reply">
+        <div class="entry-reply-label">女儿的回信 · ${fmtDate(e.replyTs)}</div>
+        <div class="reply-text-content"></div>
+      </div>
+    `;
+    div.querySelector('.entry-text').textContent = e.text;
+    div.querySelector('.reply-text-content').textContent = e.reply;
+    container.appendChild(div);
+  });
+  // 标记为已读
+  const allEntries = loadEntries();
+  allEntries.forEach(e => { if (e.reply) e.replyRead = true; });
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allEntries)); } catch (err) {}
+}
+
+// 点击花朵——重新呼吸
+document.getElementById('flower-stage').addEventListener('click', () => {
+  if (breathingState.running) return;
+  // 隐藏问候和提示，重新呼吸
+  greetingEl.style.opacity = '0';
+  flowerNameEl.style.opacity = '0';
+  writePromptEl.classList.remove('show');
+  setTimeout(() => runBreathing(), 600);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//   写「今天」
+// ═══════════════════════════════════════════════════════════════════
+const writeTextarea = document.getElementById('write-textarea');
+const writeDateEl = document.getElementById('write-date');
+
+document.getElementById('write-prompt').addEventListener('click', () => {
+  writeDateEl.textContent = fmtTodayHeader();
+  writeTextarea.value = '';
+  showScreen('write');
+  setTimeout(() => writeTextarea.focus(), 300);
+});
+
+document.getElementById('write-back').addEventListener('click', () => {
+  if (writeTextarea.value.trim() && !confirm('还没保存，确定返回吗？')) return;
+  showScreen('home');
+});
+
+document.getElementById('save-self').addEventListener('click', () => {
+  const text = writeTextarea.value.trim();
+  if (!text) { showScreen('home'); return; }
+  const ts = Date.now();
+  saveEntry({ ts, text, shared: false, flower: currentFlower.name, quoteIdx: Math.abs(ts) % HUA_QIAN.length });
+  showScreen('home');
+  showToast('收起来了。');
+});
+
+document.getElementById('save-share').addEventListener('click', async () => {
+  const text = writeTextarea.value.trim();
+  if (!text) return;
+  const btn = document.getElementById('save-share');
+  btn.disabled = true;
+  btn.textContent = '正在寄出……';
+
+  const ts = Date.now();
+  // 生成唯一 ID：时间戳 + 6位随机
+  const letterId = ts.toString(36) + Math.random().toString(36).slice(2, 8);
+  const entry = {
+    ts, text, shared: true,
+    flower: currentFlower.name,
+    quoteIdx: Math.abs(ts) % HUA_QIAN.length,
+    letterId,
+  };
+
+  // 先存本地
+  saveEntry(entry);
+
+  // 同时调用 worker 存到云端 + 发邮件
+  try {
+    // 这两个并行做，任何一个失败都不阻塞另一个
+    const results = await Promise.allSettled([
+      saveToCloud(entry),
+      sendEmail(entry),
+    ]);
+    const cloudOk = results[0].status === 'fulfilled';
+    const emailOk = results[1].status === 'fulfilled';
+
+    showScreen('home');
+    if (cloudOk && emailOk) {
+      showToast('已经寄出了。<br>女儿看到会回信的。');
+    } else if (cloudOk || emailOk) {
+      showToast('已经寄出了。<br>女儿看到会回信的。');
+    } else {
+      showToast('网络不太好，<br>已经留在「过往的今天」里了。');
+    }
+  } catch (e) {
+    console.error(e);
+    showScreen('home');
+    showToast('已经留在「过往的今天」里了。');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '寄给女儿';
+  }
+});
+
+// 存到 Cloudflare Workers
+async function saveToCloud(entry) {
+  if (!CONFIG.workerUrl || CONFIG.workerUrl === 'YOUR_WORKER_URL') {
+    throw new Error('worker URL 未配置');
+  }
+  const res = await fetch(CONFIG.workerUrl + '/letter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: entry.letterId,
+      text: entry.text,
+      flower: entry.flower,
+      ts: entry.ts,
+    }),
+  });
+  if (!res.ok) throw new Error('worker 返回错误');
+  return res.json();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   EmailJS——发邮件
+// ═══════════════════════════════════════════════════════════════════
+function sendEmail(entry) {
+  return new Promise((resolve, reject) => {
+    if (CONFIG.emailjs.publicKey === 'YOUR_PUBLIC_KEY') {
+      console.warn('EmailJS 还未配置');
+      return reject(new Error('EmailJS not configured'));
+    }
+    if (typeof emailjs === 'undefined') {
+      return reject(new Error('EmailJS SDK not loaded'));
+    }
+    // 构造回信链接
+    const replyLink = (CONFIG.replyPageUrl && CONFIG.replyPageUrl !== 'YOUR_REPLY_PAGE_URL')
+      ? CONFIG.replyPageUrl + '?id=' + encodeURIComponent(entry.letterId || '')
+      : '';
+
+    emailjs.init({ publicKey: CONFIG.emailjs.publicKey });
+    emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateId, {
+      mother_name: CONFIG.motherName,
+      date_time: fmtDate(entry.ts),
+      content: entry.text,
+      flower: entry.flower,
+      reply_link: replyLink,
+      letter_id: entry.letterId || '',
+    }).then(resolve).catch(reject);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   列表
+// ═══════════════════════════════════════════════════════════════════
+const listContent = document.getElementById('list-content');
+const listEmpty = document.getElementById('list-empty');
+
+document.getElementById('list-btn').addEventListener('click', () => {
+  renderList();
+  showScreen('list');
+});
+document.getElementById('list-back').addEventListener('click', () => showScreen('home'));
+
+function renderList() {
+  const entries = loadEntries().slice().reverse(); // 新→旧
+  listContent.innerHTML = '';
+  if (entries.length === 0) {
+    listEmpty.style.display = 'block';
+    return;
+  }
+  listEmpty.style.display = 'none';
+  entries.forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'entry';
+    const quote = HUA_QIAN[e.quoteIdx ?? 0];
+    div.innerHTML = `
+      <div class="entry-meta">
+        <span>${fmtDate(e.ts)} · ${e.flower || ''}</span>
+        ${e.shared ? '<span class="entry-shared">✿ 寄出过</span>' : ''}
+      </div>
+      <div class="entry-text"></div>
+      <div class="entry-quote">${quote.text}<span class="entry-quote-from">— ${quote.from}</span></div>
+      ${e.reply ? `<div class="entry-reply"><div class="entry-reply-label">女儿的回信</div>${escapeHtml(e.reply)}</div>` : ''}
+    `;
+    div.querySelector('.entry-text').textContent = e.text;
+    listContent.appendChild(div);
+  });
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   第一次使用弹窗
+// ═══════════════════════════════════════════════════════════════════
+const welcomeModal = document.getElementById('welcome-modal');
+function showWelcome() {
+  welcomeModal.classList.add('show');
+}
+document.getElementById('welcome-ok').addEventListener('click', () => {
+  welcomeModal.classList.remove('show');
+  const meta = loadMeta();
+  meta.welcomed = true;
+  saveMeta(meta);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//   Toast
+// ═══════════════════════════════════════════════════════════════════
+const toastEl = document.getElementById('toast');
+function showToast(html) {
+  toastEl.innerHTML = html;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//   启动
+// ═══════════════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  const meta = loadMeta();
+  if (!meta.welcomed) {
+    setTimeout(showWelcome, 800);
+  }
+  initHome();
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//   隐藏入口：女儿模式 #mama
+// ═══════════════════════════════════════════════════════════════════
+if (window.location.hash === '#mama') {
+  // 给 Koko 看的列表（标记 shared 的）
+  window.addEventListener('load', () => {
+    const sharedEntries = loadEntries().filter(e => e.shared).reverse();
+    document.body.innerHTML = `
+      <div style="max-width:480px;margin:0 auto;padding:30px 20px;">
+        <h2 style="font-size:18px;color:#6b5d50;letter-spacing:0.1em;font-weight:500;">妈妈寄来的「今天」</h2>
+        <p style="color:#a89888;font-size:13px;">这里只看得到本机存的，妈妈手机上的内容会通过邮件发给你。</p>
+        <div id="mama-list"></div>
+      </div>
+    `;
+    const list = document.getElementById('mama-list');
+    if (sharedEntries.length === 0) {
+      list.innerHTML = '<p style="color:#c4b5a5;text-align:center;margin-top:60px;">还没有妈妈寄来的内容。</p>';
+    } else {
+      sharedEntries.forEach(e => {
+        const d = document.createElement('div');
+        d.style.cssText = 'background:#fff;border:0.5px solid #ead8c8;border-radius:14px;padding:18px;margin:14px 0;';
+        d.innerHTML = `<div style="font-size:12px;color:#a89888;margin-bottom:10px;">${fmtDate(e.ts)} · ${e.flower}</div><div style="font-size:15px;line-height:1.8;color:#4a4035;white-space:pre-wrap;">${escapeHtml(e.text)}</div>`;
+        list.appendChild(d);
+      });
+    }
+  }, { once: true });
+}
+</script>
+
+</body>
+</html>
