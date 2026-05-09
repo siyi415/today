@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>给妈妈回信</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    background: #fdf6f0;
+    color: #3a3530;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+  }
+  .container {
+    width: 100%;
+    max-width: 540px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 500;
+    color: #6b5d50;
+    letter-spacing: 0.1em;
+    margin: 0 0 24px;
+  }
+  .card {
+    background: #fff;
+    border: 0.5px solid #ead8c8;
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .meta {
+    font-size: 13px;
+    color: #a89888;
+    margin-bottom: 14px;
+    letter-spacing: 0.05em;
+  }
+  .letter-text {
+    font-size: 16px;
+    line-height: 1.9;
+    color: #4a4035;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .reply-section {
+    margin-top: 24px;
+  }
+  label {
+    display: block;
+    font-size: 14px;
+    color: #6b5d50;
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+  textarea {
+    width: 100%;
+    min-height: 180px;
+    padding: 16px;
+    border: 0.5px solid #e0c8b8;
+    border-radius: 12px;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #3a3530;
+    background: #fdf9f4;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+  }
+  textarea:focus { border-color: #c89588; }
+  .secret-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 14px 0 18px;
+  }
+  .secret-row label { margin-bottom: 0; font-size: 13px; }
+  input[type="password"] {
+    flex: 1;
+    padding: 10px 14px;
+    border: 0.5px solid #e0c8b8;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fdf9f4;
+    outline: none;
+    font-family: inherit;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    background: #d4a59a;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.1em;
+  }
+  button:active { background: #c89588; transform: scale(0.99); }
+  button:disabled { background: #d4c4b4; cursor: not-allowed; }
+  .status {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    text-align: center;
+    line-height: 1.7;
+  }
+  .status.ok { background: #ecf5e8; color: #5a7340; }
+  .status.err { background: #fbebe9; color: #a55050; }
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #a89888;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  .existing-reply {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: #fdf2ee;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #6b5d50;
+    line-height: 1.7;
+  }
+  .existing-reply-label {
+    font-size: 12px;
+    color: #c89588;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>给妈妈回信</h1>
+  <div id="content"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//   配置——跟 index.html 用同一个 worker URL
+// ═══════════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://today-mama.kellywu0523.workers.dev/'; // ← 替换成你的 worker URL
+
+// ═══════════════════════════════════════════════════════════════════
+//   主流程
+// ═══════════════════════════════════════════════════════════════════
+const root = document.getElementById('content');
+
+function fmtDate(ts) {
+  const d = new Date(ts);
+  const m = d.getMonth()+1, day = d.getDate();
+  const h = d.getHours(), min = String(d.getMinutes()).padStart(2,'0');
+  const period = h < 6 ? '凌晨' : h < 12 ? '上午' : h < 14 ? '中午' : h < 18 ? '下午' : h < 22 ? '晚上' : '深夜';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${m}月${day}日 ${period} ${h12}:${min}`;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  // 也支持 hash 形式 #id=xxx
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const id = params.get('id') || hashParams.get('id');
+
+  if (!id) {
+    root.innerHTML = '<div class="empty">没有信件 ID。<br>请从邮件里的链接打开这个页面。</div>';
+    return;
+  }
+  if (WORKER_URL === 'YOUR_WORKER_URL') {
+    root.innerHTML = '<div class="empty">还没配置 Worker URL。<br>请按 DEPLOY.md 完成 Cloudflare Workers 部署。</div>';
+    return;
+  }
+
+  // 拉信件
+  let letter;
+  try {
+    const res = await fetch(WORKER_URL + '/letter?id=' + encodeURIComponent(id));
+    if (!res.ok) throw new Error('找不到这封信，可能已过期或 ID 错误');
+    letter = await res.json();
+  } catch (e) {
+    root.innerHTML = `<div class="empty">${e.message}</div>`;
+    return;
+  }
+
+  // 拉已有的回信（如果之前回过，让你看到）
+  let existingReply = null;
+  try {
+    const res = await fetch(WORKER_URL + '/reply?letterId=' + encodeURIComponent(id));
+    if (res.ok) existingReply = await res.json();
+  } catch (e) {}
+
+  renderLetter(letter, existingReply);
+}
+
+function renderLetter(letter, existingReply) {
+  root.innerHTML = `
+    <div class="card">
+      <div class="meta">${fmtDate(letter.ts)}${letter.flower ? ' · ' + escapeHtml(letter.flower) : ''}</div>
+      <div class="letter-text"></div>
+      ${existingReply ? `
+        <div class="existing-reply">
+          <div class="existing-reply-label">你之前回的信（再回会覆盖）</div>
+          <div id="existing-reply-text"></div>
+        </div>
+      ` : ''}
+    </div>
+    <div class="reply-section">
+      <label for="reply-text">写回信</label>
+      <textarea id="reply-text" placeholder="妈，今天看到你的信……"></textarea>
+      <div class="secret-row">
+        <label for="secret">密钥</label>
+        <input type="password" id="secret" placeholder="回信密钥" />
+      </div>
+      <button id="send-btn">寄回去</button>
+      <div id="status" style="display:none;"></div>
+    </div>
+  `;
+  root.querySelector('.letter-text').textContent = letter.text;
+  if (existingReply) {
+    root.querySelector('#existing-reply-text').textContent = existingReply.text;
+    root.querySelector('#reply-text').value = existingReply.text;
+  }
+
+  // 记住密钥
+  const savedSecret = localStorage.getItem('reply_secret');
+  if (savedSecret) document.getElementById('secret').value = savedSecret;
+
+  document.getElementById('send-btn').addEventListener('click', async () => {
+    const text = document.getElementById('reply-text').value.trim();
+    const secret = document.getElementById('secret').value.trim();
+    const status = document.getElementById('status');
+    const btn = document.getElementById('send-btn');
+
+    if (!text) { showStatus('回信内容不能空', 'err'); return; }
+    if (!secret) { showStatus('需要密钥', 'err'); return; }
+
+    btn.disabled = true;
+    btn.textContent = '寄出中……';
+    status.style.display = 'none';
+
+    try {
+      const res = await fetch(WORKER_URL + '/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ letterId: letter.id, text, secret }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '出错了');
+      localStorage.setItem('reply_secret', secret);
+      showStatus('寄出去了。<br>妈妈下次打开「今天」会看到。', 'ok');
+      btn.textContent = '已寄出';
+      setTimeout(() => { btn.disabled = false; btn.textContent = '再改一下'; }, 2000);
+    } catch (e) {
+      showStatus(e.message || '寄出失败，再试一次', 'err');
+      btn.disabled = false;
+      btn.textContent = '寄回去';
+    }
+  });
+
+  function showStatus(msg, type) {
+    const s = document.getElementById('status');
+    s.innerHTML = msg;
+    s.className = 'status ' + type;
+    s.style.display = 'block';
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
